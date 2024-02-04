@@ -248,13 +248,13 @@ impl Board {
         }
 
         if let Some(target) = self.possible_en_passant() {
-            if let Some(pawn) = square.offset(1, 0) {
+            if let Some(pawn) = target.offset(1, -direction) {
                 if pawn == square {
                     squares.insert(target);
                 }
             }
 
-            if let Some(pawn) = square.offset(-1, 0) {
+            if let Some(pawn) = target.offset(-1, -direction) {
                 if pawn == square {
                     squares.insert(target);
                 }

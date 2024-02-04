@@ -3,6 +3,14 @@ use super::*;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Square(usize, usize);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Status {
+    Playing,
+    White,
+    Black,
+    Draw,
+}
+
 #[derive(Debug, Clone)]
 pub struct Board {
     pub squares: [[Piece; 8]; 8],
@@ -13,6 +21,8 @@ pub struct Board {
     pub moves: Vec<Move>,
 
     pub check: bool,
+    pub status: Status,
+    pub draw_offer: bool,
 }
 
 impl Square {
@@ -77,6 +87,8 @@ impl Board {
             moves: Vec::new(),
 
             check: false,
+            status: Status::Playing,
+            draw_offer: false,
         }
     }
 
@@ -206,6 +218,27 @@ impl Board {
             }
             _ => None,
         }
+    }
+
+    pub fn resign(&mut self) {
+        self.status = match self.which_color() {
+            PieceColor::White => Status::Black,
+            PieceColor::Black => Status::White,
+        };
+    }
+
+    pub fn draw(&mut self) {
+        if self.draw_offer {
+            self.status = Status::Draw;
+        } else {
+            self.draw_offer = true;
+            self.turn += 1;
+        }
+    }
+
+    pub fn decline_draw(&mut self) {
+        self.draw_offer = false;
+        self.turn -= 1;
     }
 
     pub fn is_threatened(&self, square: Square) -> bool {

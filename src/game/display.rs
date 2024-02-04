@@ -40,23 +40,46 @@ impl Display for Piece {
     }
 }
 
+impl Display for Status {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let wins = style("Wins").bold().green();
+        let draw = style("Draw").bold().yellow();
+        match self {
+            Status::Playing => write!(f, "Playing"),
+            Status::White => write!(f, "{} {}", PieceColor::White, wins),
+            Status::Black => write!(f, "{} {}", PieceColor::Black, wins),
+            Status::Draw => write!(f, "{}", draw),
+        }
+    }
+}
+
 impl Display for Board {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        for rank in (0..8).rev() {
-            write!(f, "{}", rank + 1)?;
-            for file in 0..8 {
-                let square = Square::new(file, rank).unwrap();
-                let piece = self.get(square);
-                write!(f, " {}", piece)?;
+        if self.status == Status::Playing {
+            for rank in (0..8).rev() {
+                write!(f, "{}", rank + 1)?;
+                for file in 0..8 {
+                    let square = Square::new(file, rank).unwrap();
+                    let piece = self.get(square);
+                    write!(f, " {}", piece)?;
+                }
+                writeln!(f)?;
             }
-            writeln!(f)?;
+            writeln!(f, "  a b c d e f g h")?;
+
+            if self.draw_offer {
+                writeln!(f, "{}", style("Your opponent offered you a draw.").yellow())?;
+            } else {
+                writeln!(f, "Turn Number: {}", self.turn)?;
+                writeln!(f, "{} to move!", self.which_color())?;
+                if self.check {
+                    writeln!(f, "{}", style("CHECK!").red())?;
+                }
+            }
+        } else {
+            writeln!(f, "Game has ended! Result: {}", self.status)?;
         }
-        writeln!(f, "  a b c d e f g h")?;
-        writeln!(f, "Turn Number: {}", self.turn)?;
-        writeln!(f, "{} to move!", self.which_color())?;
-        if self.check {
-            writeln!(f, "{}", style("CHECK!").red())?;
-        }
+
         Ok(())
     }
 }
