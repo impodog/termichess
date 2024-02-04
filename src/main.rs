@@ -1,6 +1,7 @@
 use ::termichess::prelude::*;
 
 fn main() {
+    lazy_static::initialize(&CONFIG);
     loop {
         let mode = dialoguer::Select::new()
             .with_prompt("Main Menu")
@@ -13,11 +14,14 @@ fn main() {
             1 => {
                 println!(
                     "Welcome to {}! This is a simple chess game written in {}.",
-                    console::style("TermiChess").bold(),
-                    console::style("Rust").bold()
+                    console::style("TermiChess").bold().cyan(),
+                    console::style("Rust").bold().cyan()
                 );
                 println!("Currently, you can play locally against another player.\n");
-                println!("For more references, please check the README.md file.");
+                println!(
+                    "For more references, please check the {} file.",
+                    console::style("README.md").bold().blue()
+                );
                 println!()
             }
             2 => {

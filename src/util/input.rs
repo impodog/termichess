@@ -1,5 +1,3 @@
-use super::*;
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Command {
     Chess(String),

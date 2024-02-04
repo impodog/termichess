@@ -53,18 +53,6 @@ impl PieceKind {
             _ => None,
         }
     }
-
-    pub fn to_unicode(&self) -> char {
-        match self {
-            PieceKind::Empty => '-',
-            PieceKind::King => '♔',
-            PieceKind::Queen => '♕',
-            PieceKind::Bishop => '♗',
-            PieceKind::Knight => '♘',
-            PieceKind::Rook => '♖',
-            PieceKind::Pawn => '♙',
-        }
-    }
 }
 
 impl PieceColor {
@@ -106,6 +94,52 @@ impl Piece {
             kind: PieceKind::Empty,
             color: PieceColor::White,
             previous: 0,
+        }
+    }
+
+    pub fn unicode(&self) -> &'static str {
+        if CONFIG.unicode {
+            match self.color {
+                PieceColor::White => match self.kind {
+                    PieceKind::King => "♔",
+                    PieceKind::Queen => "♕",
+                    PieceKind::Bishop => "♗",
+                    PieceKind::Knight => "♘",
+                    PieceKind::Rook => "♖",
+                    PieceKind::Pawn => "♙",
+                    PieceKind::Empty => "-",
+                },
+                PieceColor::Black => match self.kind {
+                    PieceKind::King => "♚",
+                    PieceKind::Queen => "♛",
+                    PieceKind::Bishop => "♝",
+                    PieceKind::Knight => "♞",
+                    PieceKind::Rook => "♜",
+                    PieceKind::Pawn => "♟",
+                    PieceKind::Empty => "-",
+                },
+            }
+        } else {
+            match self.color {
+                PieceColor::White => match self.kind {
+                    PieceKind::King => "K",
+                    PieceKind::Queen => "Q",
+                    PieceKind::Bishop => "B",
+                    PieceKind::Knight => "N",
+                    PieceKind::Rook => "R",
+                    PieceKind::Pawn => "P",
+                    PieceKind::Empty => "-",
+                },
+                PieceColor::Black => match self.kind {
+                    PieceKind::King => "K",
+                    PieceKind::Queen => "Q",
+                    PieceKind::Bishop => "B",
+                    PieceKind::Knight => "N",
+                    PieceKind::Rook => "R",
+                    PieceKind::Pawn => "P",
+                    PieceKind::Empty => "-",
+                },
+            }
         }
     }
 

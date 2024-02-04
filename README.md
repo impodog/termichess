@@ -37,3 +37,12 @@ To *promote* a pawn, you need to type the destination code followed with `=` and
 Specially, to do en passant, you only need to type the destination code *without* the `x`. For example, `e5d6` or `d6` does en passant.
 
 To *resign* the game, you need to type `resign`. Or, to *offer/accept a draw*, you need to type `draw`.
+
+## Configurations
+
+You can enhance your game experience by modifying the `termichess.toml` file, under where you start the executable.
+
+Possible configurations are:
+| Key | Description | Default |
+| --- | --- | --- |
+| `unicode` | Whether to use unicode symbols for chess pieces. If not, ascii characters are used. | `false` |

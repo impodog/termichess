@@ -79,6 +79,8 @@ impl Board {
 
             board.turn += 1;
             board.update();
+            board.update_mate();
+
             Some(board)
         }
     }

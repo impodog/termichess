@@ -1,6 +1,6 @@
 [package]
 name = "termichess"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,3 +8,8 @@ edition = "2021"
 [dependencies]
 console = "0.15.8"
 dialoguer = "0.11.0"
+lazy_static = "1.4.0"
+num_cpus = "1.16.0"
+serde = { version = "1.0.196", features = ["derive"] }
+threadpool = "1.8.1"
+toml = "0.8.9"

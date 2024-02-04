@@ -40,7 +40,6 @@ impl Board {
 
         let color = self.which_color();
 
-        println!("Lexical Notation: {:?}", notation);
         let from = if notation.from.is_none() {
             let mut candidate = None;
             for file in 0..8 {
@@ -240,7 +239,10 @@ impl Board {
                                 chars[cur..cur + 1].iter().collect::<String>()
                             ))?,
                     );
-                    cur += 1;
+                    #[allow(unused_assignments)]
+                    {
+                        cur += 1;
+                    }
                 }
 
                 Ok(notation)

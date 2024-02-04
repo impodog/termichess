@@ -21,8 +21,11 @@ pub struct Board {
     pub moves: Vec<Move>,
 
     pub check: bool,
+    pub checkmate: bool,
     pub status: Status,
     pub draw_offer: bool,
+
+    pub pool: Arc<RwLock<threadpool::ThreadPool>>,
 }
 
 impl Square {
@@ -87,8 +90,11 @@ impl Board {
             moves: Vec::new(),
 
             check: false,
+            checkmate: false,
             status: Status::Playing,
             draw_offer: false,
+
+            pool: Arc::new(RwLock::new(threadpool::ThreadPool::new(num_cpus::get()))),
         }
     }
 
@@ -247,6 +253,10 @@ impl Board {
 
     pub fn is_check(&self) -> bool {
         self.check
+    }
+
+    pub fn is_checkmate(&self) -> bool {
+        self.checkmate
     }
 
     pub fn show_piece_info(&self) {
