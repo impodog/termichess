@@ -25,7 +25,7 @@ impl Board {
                 }
 
                 if let Some(target) = square.offset(file, rank) {
-                    if self.get(target).color != piece.color {
+                    if self.get(target).is_replaceable(piece.color) {
                         squares.insert(target);
                     }
                 }
