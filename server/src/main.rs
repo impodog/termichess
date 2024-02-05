@@ -9,6 +9,7 @@ use tide::{Request, StatusCode};
 #[derive(Debug, Clone)]
 struct RoomInfo {
     turn: bool,
+    is_chat: bool,
     joined: usize,
     queue: Option<String>,
     last_used: std::time::Instant,
@@ -49,7 +50,8 @@ async fn main() -> tide::Result<()> {
         async_std::task::block_on(async {
             loop {
                 clear_unused_rooms(rooms.clone()).await;
-                async_std::task::sleep(std::time::Duration::from_secs(15)).await;
+                let number: u64 = rand::random();
+                async_std::task::sleep(std::time::Duration::from_secs(5 + number % 10)).await;
             }
         });
     });
@@ -88,6 +90,7 @@ async fn chess_login(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
                 login.room,
                 RoomInfo {
                     turn: true,
+                    is_chat: false,
                     joined: 1,
                     queue: None,
                     last_used: std::time::Instant::now(),
@@ -110,9 +113,14 @@ async fn chess_play(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::Re
                 info.last_used = std::time::Instant::now();
 
                 if info.turn == command.player && info.queue.is_none() {
+                    if command.cmd.starts_with("chat") {
+                        info.is_chat = true;
+                        info!("Player sent a chat message in room: {:?}", command.room);
+                    } else {
+                        info!("Player played a move in room: {:?}", command.room);
+                    }
                     info.turn = !info.turn;
                     info.queue = Some(command.cmd);
-                    info!("Player played a move in room: {:?}", command.room);
                     Ok(json!({}).into())
                 } else {
                     info!(
@@ -145,6 +153,10 @@ async fn chess_query(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
                 if info.turn == query.player {
                     if let Some(cmd) = info.queue.clone() {
                         info.queue = None;
+                        if info.is_chat {
+                            info.turn = !info.turn;
+                            info.is_chat = false;
+                        }
                         info!("Player queried the room: {:?}", query.room);
                         Ok(json!(QueryResponse { cmd }).into())
                     } else {
@@ -205,7 +217,7 @@ async fn clear_unused_rooms(map: Arc<RwLock<RoomMap>>) {
     let mut map = map.write().await;
     let now = std::time::Instant::now();
     map.retain(|_, info| {
-        if now.duration_since(info.last_used) < std::time::Duration::from_secs(60) {
+        if now.duration_since(info.last_used) < std::time::Duration::from_secs(10) {
             true
         } else {
             info!("Room expired: {:?}", info);

@@ -2,13 +2,13 @@
 
 A simple chess game in the terminal. Supporting local and remote multiplayer.
 
-## How to execute
+## Quick Start
 
 ```bash
 cargo run --release
 ```
 
-## How to play
+## Chess
 
 This game is played with two players. Each player performs a move once at a time. For chess references, see [Chess](https://en.wikipedia.org/wiki/Chess).
 
@@ -38,16 +38,6 @@ Specially, to do en passant, you only need to type the destination code *without
 
 To *resign* the game, you need to type `resign`. Or, to *offer/accept a draw*, you need to type `draw`.
 
-## Configurations
-
-You can enhance your game experience by modifying the `termichess.toml` file, under where you start the executable.
-
-Possible configurations are:
-| Key | Description | Default |
-| --- | --- | --- |
-| `unicode` | Whether to use unicode symbols for chess pieces. If not, ascii characters are used. | `false` |
-| `address` | The default address of the remote server to use. | `http://127.0.0.1:8080` |
-
 ## Playing Online
 
 ### Server
@@ -62,3 +52,17 @@ cargo run --release
 ### Client
 
 After starting the server, you can play online by setting the `address` configuration to the server's address(default port is 8080). Then, enter one room code (e.g. `my-chess-room` `impodog's room` `Room1`), and wait for your friend to join the same room. Then, you can play with your friend online.
+
+### Chatting
+
+You can talk to your opponent when it's your turn. Simply type `chat [your message]` to send them one!
+
+## Configurations
+
+You can enhance your game experience by modifying the `termichess.toml` file, under where you start the executable.
+
+Possible configurations are:
+| Key       | Description                                                                         | Default                 |
+| ---       | ---                                                                                 | ---                     |
+| `unicode` | Whether to use unicode symbols for chess pieces. If not, ascii characters are used. | `false`                 |
+| `address` | The default address of the remote server to use.                                    | `http://127.0.0.1:8080` |

@@ -35,7 +35,7 @@ impl Connection {
                     println!(
                         "{} You are {}!",
                         style("Welcome!").green(),
-                        style("Black").on_black()
+                        style("Black").on_black().white()
                     );
                 }
                 res
@@ -171,17 +171,19 @@ pub async fn play_remotely() {
         bar.enable_steady_tick(Duration::from_millis(300));
 
         loop {
-            tokio::time::sleep(Duration::from_millis(1000)).await;
+            tokio::time::sleep(Duration::from_millis(300)).await;
 
             let q = connection.is_ok().await;
             if let Err(err) = q {
-                println!("{}: {}", terminate, err);
+                println!("{} {}", terminate, err);
                 return;
             }
 
             if q.unwrap() {
                 break;
             }
+
+            tokio::time::sleep(Duration::from_millis(700)).await;
         }
 
         bar.finish_with_message(format!("{}", "Opponent joined!"));
@@ -218,11 +220,11 @@ pub async fn play_remotely() {
             bar.enable_steady_tick(Duration::from_millis(300));
 
             loop {
-                tokio::time::sleep(Duration::from_millis(1000)).await;
+                tokio::time::sleep(Duration::from_millis(300)).await;
 
                 let q = connection.query().await;
                 if let Err(err) = q {
-                    println!("{}: {}", terminate, err);
+                    println!("{} {}", terminate, err);
                     break 'game_loop;
                 }
                 query = q.unwrap();
@@ -230,10 +232,14 @@ pub async fn play_remotely() {
                 if query.is_some() {
                     break;
                 }
+
+                tokio::time::sleep(Duration::from_millis(700)).await;
             }
             let query = query.unwrap();
-            bar.finish();
-            println!("Opponent command: {}", query.cmd);
+            bar.finish_and_clear();
+            if !query.cmd.starts_with("chat") {
+                println!("Opponent: {}", query.cmd);
+            }
 
             let command = util::parse_raw(query.cmd);
 
@@ -246,7 +252,7 @@ pub async fn play_remotely() {
             if let Some(str) = player_str {
                 let play = connection.play(str).await;
                 if let Err(err) = play {
-                    println!("{}: {}", terminate, err);
+                    println!("{} {}", terminate, err);
                     break 'game_loop;
                 }
             }
@@ -266,7 +272,7 @@ pub async fn play_remotely() {
                             if let Some(str) = player_str {
                                 let play = connection.play(str).await;
                                 if let Err(err) = play {
-                                    println!("{}: {}", terminate, err);
+                                    println!("{} {}", terminate, err);
                                     break 'game_loop;
                                 }
                             }
@@ -285,7 +291,7 @@ pub async fn play_remotely() {
                     if let Some(str) = player_str {
                         let play = connection.play(str).await;
                         if let Err(err) = play {
-                            println!("{}: {}", terminate, err);
+                            println!("{} {}", terminate, err);
                             break 'game_loop;
                         }
                     }
@@ -299,7 +305,7 @@ pub async fn play_remotely() {
                     if let Some(str) = player_str {
                         let play = connection.play(str).await;
                         if let Err(err) = play {
-                            println!("{}: {}", terminate, err);
+                            println!("{} {}", terminate, err);
                             break 'game_loop;
                         }
                     }
@@ -307,6 +313,20 @@ pub async fn play_remotely() {
                     is_turn = !is_turn;
 
                     board.draw();
+                }
+                util::Command::Chat(str) => {
+                    if let Some(str) = player_str {
+                        let play = connection.play(str).await;
+                        if let Err(err) = play {
+                            println!("{} {}", terminate, err);
+                            break 'game_loop;
+                        }
+                    } else {
+                        println!("{}: {}", style("Chat").bold(), str);
+                        println!("Continue...");
+                        let term = console::Term::stdout();
+                        term.read_key().unwrap();
+                    }
                 }
             }
         }
@@ -317,5 +337,15 @@ pub async fn play_remotely() {
         println!("{}", board);
     }
 
+    {
+        let bar =
+            indicatif::ProgressBar::new_spinner().with_message("Waiting for game to finish...");
+        bar.enable_steady_tick(Duration::from_millis(300));
+
+        let number: u64 = rand::random();
+        tokio::time::sleep(Duration::from_millis(3000 + number % 2000)).await;
+
+        bar.finish_and_clear();
+    }
     let _ = connection.logout().await;
 }

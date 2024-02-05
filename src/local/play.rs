@@ -46,6 +46,12 @@ pub fn play_locally() {
                 println!("You offered a draw!");
                 board.draw();
             }
+            util::Command::Chat(_str) => {
+                println!(
+                    "{}",
+                    style("Why use chat in local games? Just talk to them in person!").bold()
+                );
+            }
         }
         println!();
     }

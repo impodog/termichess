@@ -7,7 +7,7 @@ async fn main() {
     loop {
         let mode = dialoguer::Select::new()
             .with_prompt("Main Menu")
-            .items(&["Chess - Local", "Chess - Remote", "Information", "Quit"])
+            .items(&["Play", "Play Online", "Information", "Quit"])
             .default(0)
             .interact()
             .unwrap();
@@ -16,11 +16,12 @@ async fn main() {
             1 => remote::play_remotely().await,
             2 => {
                 println!(
-                    "Welcome to {}! This is a simple chess game written in {}.",
+                    "Welcome to {}! This is a simple chess game written in {}. Licensed under {}.",
                     console::style("TermiChess").bold().cyan(),
-                    console::style("Rust").bold().cyan()
+                    console::style("Rust").bold().cyan(),
+                    console::style("MIT License").bold().cyan()
                 );
-                println!("Currently, you can play locally against another player, or connect to a server and play online.\n");
+                println!("Currently, you can play locally against another player, or connect to a personal server and play online.\n");
                 println!(
                     "For more references, please check the {} file.",
                     console::style("README.md").bold().blue()
