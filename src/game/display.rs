@@ -151,8 +151,12 @@ impl Display for Board {
         } else {
             self.show_layout(f, flip)?;
 
-            if self.checkmate {
-                writeln!(f, "{}", style("CHECKMATE!").red())?;
+            if self.no_safe {
+                if self.check {
+                    writeln!(f, "{}", style("CHECKMATE!").red())?;
+                } else {
+                    writeln!(f, "{}", style("STALEMATE!").yellow())?;
+                }
             }
             writeln!(f, "Game has ended! Result: {}", self.status)?;
         }

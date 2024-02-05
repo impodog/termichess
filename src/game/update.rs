@@ -38,11 +38,7 @@ impl Board {
         }
     }
 
-    fn is_mate(&self) -> bool {
-        if !self.check {
-            return false;
-        }
-
+    fn check_no_safe(&self) -> bool {
         let color = self.which_color();
         let is_safe = Arc::new(RwLock::new(false));
 
@@ -103,12 +99,16 @@ impl Board {
     }
 
     pub fn update_mate(&mut self) {
-        if self.is_mate() {
-            self.checkmate = true;
-            self.status = match self.which_color() {
-                PieceColor::White => Status::Black,
-                PieceColor::Black => Status::White,
-            };
+        if self.check_no_safe() {
+            self.no_safe = true;
+            if self.check {
+                self.status = match self.which_color() {
+                    PieceColor::White => Status::Black,
+                    PieceColor::Black => Status::White,
+                };
+            } else {
+                self.status = Status::Draw;
+            }
         }
     }
 }

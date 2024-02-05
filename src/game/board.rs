@@ -21,7 +21,7 @@ pub struct Board {
     pub moves: Vec<Move>,
 
     pub check: bool,
-    pub checkmate: bool,
+    pub no_safe: bool,
     pub status: Status,
     pub draw_offer: bool,
 
@@ -90,7 +90,7 @@ impl Board {
             moves: Vec::new(),
 
             check: false,
-            checkmate: false,
+            no_safe: false,
             status: Status::Playing,
             draw_offer: false,
 
@@ -255,8 +255,8 @@ impl Board {
         self.check
     }
 
-    pub fn is_checkmate(&self) -> bool {
-        self.checkmate
+    pub fn is_no_safe(&self) -> bool {
+        self.no_safe
     }
 
     pub fn show_piece_info(&self) {
