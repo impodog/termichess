@@ -1,6 +1,7 @@
+workspace = { members = ["server"] }
 [package]
 name = "termichess"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,8 +9,15 @@ edition = "2021"
 [dependencies]
 console = "0.15.8"
 dialoguer = "0.11.0"
+indicatif = "0.17.7"
 lazy_static = "1.4.0"
 num_cpus = "1.16.0"
+reqwest = "0.11.24"
 serde = { version = "1.0.196", features = ["derive"] }
 threadpool = "1.8.1"
+tokio = { version = "1.36.0", features = ["rt", "macros"] }
 toml = "0.8.9"
+async-attributes = "1.1.2"
+async-std = "1.12.0"
+server = { version = "0.1.0", path = "server" }
+serde_json = "1.0.113"

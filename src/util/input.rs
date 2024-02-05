@@ -5,11 +5,7 @@ pub enum Command {
     Draw,
 }
 
-pub fn input_command() -> Command {
-    let str = dialoguer::Input::<String>::new()
-        .with_prompt("Command")
-        .interact_text()
-        .unwrap();
+pub fn parse_raw(str: String) -> Command {
     match str.as_str() {
         "resign" => Command::Resign,
         "draw" => Command::Draw,

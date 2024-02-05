@@ -1,13 +1,17 @@
 use super::*;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub unicode: bool,
+    pub address: String,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Self { unicode: false }
+        Self {
+            unicode: false,
+            address: "http://127.0.0.1:8080".to_string(),
+        }
     }
 }
 

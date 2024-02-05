@@ -12,7 +12,11 @@ pub fn play_locally() {
             err = None;
         }
         //board.show_piece_info();
-        let command = util::input_command();
+        let str = dialoguer::Input::<String>::new()
+            .with_prompt("Command")
+            .interact()
+            .unwrap();
+        let command = util::parse_raw(str);
 
         if board.draw_offer && command != util::Command::Draw {
             println!("Draw offer declined!");

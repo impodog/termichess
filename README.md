@@ -1,6 +1,6 @@
 # TermiChess
 
-A simple chess game in the terminal.
+A simple chess game in the terminal. Supporting local and remote multiplayer.
 
 ## How to execute
 
@@ -46,3 +46,19 @@ Possible configurations are:
 | Key | Description | Default |
 | --- | --- | --- |
 | `unicode` | Whether to use unicode symbols for chess pieces. If not, ascii characters are used. | `false` |
+| `address` | The default address of the remote server to use. | `http://127.0.0.1:8080` |
+
+## Playing Online
+
+### Server
+
+To play online, you need to have a server running. You can use the server provided in the `server` directory. To run it, you need to have Rust installed. Then, you can run the following command:
+
+```bash
+# server/
+cargo run --release
+```
+
+### Client
+
+After starting the server, you can play online by setting the `address` configuration to the server's address(default port is 8080). Then, enter one room code (e.g. `my-chess-room` `impodog's room` `Room1`), and wait for your friend to join the same room. Then, you can play with your friend online.
