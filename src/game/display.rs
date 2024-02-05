@@ -50,9 +50,9 @@ impl Display for Piece {
 
         let style = style(str).bold();
         let style = if is_dark_tile {
-            style.bg(console::Color::White)
+            style.bg(console::Color::White).fg(console::Color::Black)
         } else {
-            style.bg(console::Color::Cyan)
+            style.bg(console::Color::Cyan).fg(console::Color::Black)
         };
 
         write!(f, "{}", style)?;
@@ -74,6 +74,22 @@ impl Display for Status {
 }
 
 impl Board {
+    fn show_rank_flip(&self, f: &mut Formatter, rank: usize, flip: bool) -> fmt::Result {
+        if flip {
+            match rank {
+                7 => write!(f, " > Black's Turn {}", self.turn / 2)?,
+                0 => write!(f, " - White")?,
+                _ => write!(f, " |")?,
+            }
+        } else {
+            match rank {
+                7 => write!(f, " - Black")?,
+                0 => write!(f, " > White's Turn {}", self.turn / 2 + 1)?,
+                _ => write!(f, " |")?,
+            }
+        }
+        Ok(())
+    }
     fn show_layout(&self, f: &mut Formatter, flip: bool) -> fmt::Result {
         if (self.which_color() == PieceColor::White) ^ flip {
             for rank in (0..8).rev() {
@@ -89,11 +105,7 @@ impl Board {
                         write!(f, "{}", piece)?;
                     }
                 }
-                match rank {
-                    0 => write!(f, " > White's Turn {}", self.turn / 2 + 1)?,
-                    7 => write!(f, " - Black")?,
-                    _ => write!(f, " |")?,
-                }
+                self.show_rank_flip(f, rank, flip)?;
                 writeln!(f)?;
             }
             writeln!(f, "   a  b  c  d  e  f  g  h")?;
@@ -111,11 +123,7 @@ impl Board {
                         write!(f, "{}", piece)?;
                     }
                 }
-                match rank {
-                    0 => write!(f, " - White")?,
-                    7 => write!(f, " > Black's Turn {}", self.turn / 2)?,
-                    _ => write!(f, " |")?,
-                }
+                self.show_rank_flip(f, rank, !flip)?;
                 writeln!(f)?;
             }
             writeln!(f, "   h  g  f  e  d  c  b  a")?;

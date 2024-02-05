@@ -29,7 +29,7 @@ impl Connection {
                     println!(
                         "{} You are {}!",
                         style("Welcome!").green(),
-                        style("White").on_white()
+                        style("White").on_white().black()
                     );
                 } else {
                     println!(
@@ -153,12 +153,6 @@ impl Connection {
     }
 }
 
-impl Drop for Connection {
-    fn drop(&mut self) {
-        let _ = self.logout();
-    }
-}
-
 pub async fn play_remotely() {
     let error = style("Error").red().bold();
     let terminate = style("Terminating due to Error").red().bold();
@@ -238,7 +232,8 @@ pub async fn play_remotely() {
                 }
             }
             let query = query.unwrap();
-            bar.finish_with_message(format!("Opponent command: {}", query.cmd));
+            bar.finish();
+            println!("Opponent command: {}", query.cmd);
 
             let command = util::parse_raw(query.cmd);
 
@@ -247,68 +242,80 @@ pub async fn play_remotely() {
 
         if board.draw_offer && command != util::Command::Draw {
             println!("Draw offer has been declined!");
+
+            if let Some(str) = player_str {
+                let play = connection.play(str).await;
+                if let Err(err) = play {
+                    println!("{}: {}", terminate, err);
+                    break 'game_loop;
+                }
+            }
+
+            is_turn = !is_turn;
+
             board.decline_draw();
-        }
-
-        match command {
-            util::Command::Chess(str) => {
-                let notation = board.translate(&str);
-                if let Ok(notation) = notation {
-                    let next = board.perform(notation);
-                    if next.is_none() {
-                        err = Some("Invalid move! This leads to a check!".to_string());
-                    } else {
-                        if let Some(str) = player_str {
-                            let play = connection.play(str).await;
-                            if let Err(err) = play {
-                                println!("{}: {}", terminate, err);
-                                break 'game_loop;
+        } else {
+            match command {
+                util::Command::Chess(str) => {
+                    let notation = board.translate(&str);
+                    if let Ok(notation) = notation {
+                        let next = board.perform(notation);
+                        if next.is_none() {
+                            err = Some("Invalid move! This leads to a check!".to_string());
+                        } else {
+                            if let Some(str) = player_str {
+                                let play = connection.play(str).await;
+                                if let Err(err) = play {
+                                    println!("{}: {}", terminate, err);
+                                    break 'game_loop;
+                                }
                             }
+
+                            is_turn = !is_turn;
+
+                            board = next.unwrap();
                         }
-
-                        is_turn = !is_turn;
-
-                        board = next.unwrap();
-                    }
-                } else {
-                    err = Some(format!("{}", notation.unwrap_err()));
-                }
-            }
-            util::Command::Resign => {
-                println!("{} resigned!", pronoun);
-
-                if let Some(str) = player_str {
-                    let play = connection.play(str).await;
-                    if let Err(err) = play {
-                        println!("{}: {}", terminate, err);
-                        break 'game_loop;
+                    } else {
+                        err = Some(format!("{}", notation.unwrap_err()));
                     }
                 }
+                util::Command::Resign => {
+                    println!("{} resigned!", pronoun);
 
-                // This is technically not necessary because the game is ending soon, but it's a good practice to keep the game state consistent
-                is_turn = !is_turn;
-
-                board.resign();
-            }
-            util::Command::Draw => {
-                if let Some(str) = player_str {
-                    let play = connection.play(str).await;
-                    if let Err(err) = play {
-                        println!("{}: {}", terminate, err);
-                        break 'game_loop;
+                    if let Some(str) = player_str {
+                        let play = connection.play(str).await;
+                        if let Err(err) = play {
+                            println!("{}: {}", terminate, err);
+                            break 'game_loop;
+                        }
                     }
+
+                    // This is technically not necessary because the game is ending soon, but it's a good practice to keep the game state consistent
+                    is_turn = !is_turn;
+
+                    board.resign();
                 }
+                util::Command::Draw => {
+                    if let Some(str) = player_str {
+                        let play = connection.play(str).await;
+                        if let Err(err) = play {
+                            println!("{}: {}", terminate, err);
+                            break 'game_loop;
+                        }
+                    }
 
-                is_turn = !is_turn;
+                    is_turn = !is_turn;
 
-                board.draw();
+                    board.draw();
+                }
             }
         }
-
         println!();
     }
 
     if board.status != game::Status::Playing {
         println!("{}", board);
     }
+
+    let _ = connection.logout().await;
 }

@@ -11,13 +11,14 @@ struct RoomInfo {
     turn: bool,
     joined: usize,
     queue: Option<String>,
+    last_used: std::time::Instant,
 }
 
 type RoomMap = HashMap<RoomCode, RoomInfo>;
 
 #[main]
 async fn main() -> tide::Result<()> {
-    with_level(LevelFilter::Debug);
+    with_level(LevelFilter::Error);
 
     let mut app = tide::new();
     let rooms = Arc::new(RwLock::new(RoomMap::new()));
@@ -43,9 +44,19 @@ async fn main() -> tide::Result<()> {
             .post(move |req| chess_is_ok(req, rooms_.clone()));
     }
 
-    info!("Starting server on http://127.0.0.1:8080");
+    std::thread::spawn(move || {
+        let rooms = rooms.clone();
+        async_std::task::block_on(async {
+            loop {
+                clear_unused_rooms(rooms.clone()).await;
+                async_std::task::sleep(std::time::Duration::from_secs(15)).await;
+            }
+        });
+    });
 
-    app.listen("127.0.0.1:8080").await?;
+    info!("Starting server on http://0.0.0.0:8080");
+
+    app.listen("0.0.0.0:8080").await?;
     Ok(())
 }
 
@@ -79,6 +90,7 @@ async fn chess_login(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
                     turn: true,
                     joined: 1,
                     queue: None,
+                    last_used: std::time::Instant::now(),
                 },
             );
             info!("New room created: {:?}", login.room);
@@ -95,6 +107,8 @@ async fn chess_play(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::Re
         if map.contains_key(&command.room) {
             let info = map.get_mut(&command.room).unwrap();
             if info.joined == 2 {
+                info.last_used = std::time::Instant::now();
+
                 if info.turn == command.player && info.queue.is_none() {
                     info.turn = !info.turn;
                     info.queue = Some(command.cmd);
@@ -126,6 +140,8 @@ async fn chess_query(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
         if map.contains_key(&query.room) {
             let info = map.get_mut(&query.room).unwrap();
             if info.joined == 2 {
+                info.last_used = std::time::Instant::now();
+
                 if info.turn == query.player {
                     if let Some(cmd) = info.queue.clone() {
                         info.queue = None;
@@ -169,10 +185,31 @@ async fn chess_logout(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::
 async fn chess_is_ok(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::Result {
     let is_ok: IsOkRequest = req.body_json().await?;
     {
-        let map = map.read().await;
+        let mut map = map.write().await;
 
-        let ok = map.contains_key(&is_ok.room) && map.get(&is_ok.room).unwrap().joined == 2;
-        info!("Is ok value : {:?}", ok);
-        Ok(json!(IsOkResponse { ok }).into())
+        if map.contains_key(&is_ok.room) {
+            let info = map.get_mut(&is_ok.room).unwrap();
+            info.last_used = std::time::Instant::now();
+            Ok(json!(IsOkResponse {
+                ok: info.joined == 2
+            })
+            .into())
+        } else {
+            warn!("Room not found: {:?}", is_ok.room);
+            return Err(Error::new(StatusCode::NotFound, ServerError));
+        }
     }
+}
+
+async fn clear_unused_rooms(map: Arc<RwLock<RoomMap>>) {
+    let mut map = map.write().await;
+    let now = std::time::Instant::now();
+    map.retain(|_, info| {
+        if now.duration_since(info.last_used) < std::time::Duration::from_secs(60) {
+            true
+        } else {
+            info!("Room expired: {:?}", info);
+            false
+        }
+    });
 }
