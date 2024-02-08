@@ -17,7 +17,7 @@ impl Display for PieceColor {
             f,
             "{}",
             style(self.name())
-                .bg(self.clone().into())
+                .bg((*self).into())
                 .fg(self.opposite().into())
         )
     }
@@ -30,7 +30,7 @@ impl Display for Piece {
 
         let str = if CONFIG.unicode {
             let mut str = String::from(' ');
-            str.extend(unicode.chars());
+            str.push_str(unicode);
             str.push(' ');
             str
         } else {
@@ -43,7 +43,7 @@ impl Display for Piece {
                 }
             };
             let mut str = String::from(c);
-            str.extend(unicode.chars());
+            str.push_str(unicode);
             str.push(c);
             str
         };

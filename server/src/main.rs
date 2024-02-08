@@ -67,7 +67,17 @@ async fn chess_login(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
     {
         let mut map = map.write().await;
 
-        if map.contains_key(&login.room) {
+        if let std::collections::hash_map::Entry::Vacant(e) = map.entry(login.room) {
+            e.insert(RoomInfo {
+                turn: true,
+                is_chat: false,
+                joined: 1,
+                queue: None,
+                last_used: std::time::Instant::now(),
+            });
+            info!("New room created: {:?}", login.room);
+            Ok(json!(LoginResponse { player: true }).into())
+        } else {
             let info = map.get_mut(&login.room).unwrap();
             match info.joined {
                 0 => {
@@ -85,19 +95,6 @@ async fn chess_login(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
                     Err(Error::new(StatusCode::Conflict, ServerError))
                 }
             }
-        } else {
-            map.insert(
-                login.room,
-                RoomInfo {
-                    turn: true,
-                    is_chat: false,
-                    joined: 1,
-                    queue: None,
-                    last_used: std::time::Instant::now(),
-                },
-            );
-            info!("New room created: {:?}", login.room);
-            Ok(json!(LoginResponse { player: true }).into())
         }
     }
 }
@@ -208,7 +205,7 @@ async fn chess_is_ok(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
             .into())
         } else {
             warn!("Room not found: {:?}", is_ok.room);
-            return Err(Error::new(StatusCode::NotFound, ServerError));
+            Err(Error::new(StatusCode::NotFound, ServerError))
         }
     }
 }

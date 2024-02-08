@@ -59,8 +59,8 @@ impl Square {
         match (chars.nth(0)?, chars.nth(0)?) {
             ('a'..='h', '1'..='8') => {
                 let mut chars = notation.chars();
-                let file = chars.nth(0)? as u8 - 'a' as u8;
-                let rank = chars.nth(0)? as u8 - '1' as u8;
+                let file = chars.nth(0)? as u8 - b'a';
+                let rank = chars.nth(0)? as u8 - b'1';
                 Square::new(file as usize, rank as usize)
             }
             _ => None,
@@ -189,7 +189,7 @@ impl Board {
             'a'..='h' => {
                 let mut candidate = None;
                 for rank in 0..8 {
-                    let square = Square::new((short as u8 - 'a' as u8) as usize, rank).unwrap();
+                    let square = Square::new((short as u8 - b'a') as usize, rank).unwrap();
                     let piece = self.get(square);
                     if !piece.is_empty()
                         && piece.is_color(self.which_color())
@@ -207,7 +207,7 @@ impl Board {
             '1'..='8' => {
                 let mut candidate = None;
                 for file in 0..8 {
-                    let square = Square::new(file, (short as u8 - '1' as u8) as usize).unwrap();
+                    let square = Square::new(file, (short as u8 - b'1') as usize).unwrap();
                     let piece = self.get(square);
                     if !piece.is_empty()
                         && piece.is_color(self.which_color())
@@ -272,5 +272,11 @@ impl Board {
                 println!()
             }
         }
+    }
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
     }
 }

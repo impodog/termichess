@@ -16,10 +16,7 @@ pub fn parse_raw(str: String) -> Command {
             } else {
                 Command::Chess(
                     str.chars()
-                        .filter(|c| match c {
-                            'a'..='h' | '0'..='8' | 'Q' | 'R' | 'B' | 'N' | 'K' | 'x' | '=' => true,
-                            _ => false,
-                        })
+                        .filter(|c| matches!(c, 'a'..='h' | '0'..='8' | 'Q' | 'R' | 'B' | 'N' | 'K' | 'x' | '='))
                         .collect::<String>(),
                 )
             }

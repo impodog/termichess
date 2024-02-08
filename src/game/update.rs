@@ -13,14 +13,12 @@ impl Board {
             for rank in 0..8 {
                 let square = Square::new(file, rank).unwrap();
                 let piece = self.get(square);
-                if piece.is_enemy(color) {
-                    self.reachable[file][rank] = self.reachable(square);
-                    self.threatened.extend(
-                        self.reachable[file][rank]
-                            .iter()
-                            .map(|square| square.clone()),
-                    );
+                if !piece.is_enemy(color) {
+                    continue;
                 }
+                self.reachable[file][rank] = self.reachable(square);
+                self.threatened
+                    .extend(self.reachable[file][rank].iter().copied());
             }
         }
         for file in 0..8 {

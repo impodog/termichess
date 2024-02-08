@@ -1,3 +1,4 @@
+mod serialize;
 mod board;
 mod display;
 mod moves;

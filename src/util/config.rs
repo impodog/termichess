@@ -17,6 +17,6 @@ impl Default for Config {
 
 pub(crate) fn get_config() -> Result<Config, impl serde::de::Error> {
     let path = std::path::PathBuf::from(".").join("termichess.toml");
-    let data = std::fs::read_to_string(&path).unwrap_or_default();
+    let data = std::fs::read_to_string(path).unwrap_or_default();
     toml::from_str(&data)
 }

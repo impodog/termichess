@@ -1,5 +1,3 @@
-use server::IsOkResponse;
-
 use super::*;
 
 struct Connection {
@@ -120,7 +118,7 @@ impl Connection {
             .map_err(|e| e.to_string())?;
         match res.status() {
             StatusCode::OK => {
-                let response: IsOkResponse =
+                let response: server::IsOkResponse =
                     match serde_json::from_str(&res.text().await.map_err(|e| e.to_string())?) {
                         Ok(res) => res,
                         Err(_e) => return Err("Failed to query the game".to_string()),
@@ -186,7 +184,7 @@ pub async fn play_remotely() {
             tokio::time::sleep(Duration::from_millis(700)).await;
         }
 
-        bar.finish_with_message(format!("{}", "Opponent joined!"));
+        bar.finish_with_message("Opponent joined!".to_string());
     }
 
     let mut board = game::Board::new();

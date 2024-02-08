@@ -33,12 +33,12 @@ impl PieceKind {
     pub fn to_notation(&self) -> Option<&'static str> {
         match self {
             PieceKind::Empty => None,
-            PieceKind::King => Some(&"K"),
-            PieceKind::Queen => Some(&"Q"),
-            PieceKind::Bishop => Some(&"B"),
-            PieceKind::Knight => Some(&"N"),
-            PieceKind::Rook => Some(&"R"),
-            PieceKind::Pawn => Some(&""),
+            PieceKind::King => Some("K"),
+            PieceKind::Queen => Some("Q"),
+            PieceKind::Bishop => Some("B"),
+            PieceKind::Knight => Some("N"),
+            PieceKind::Rook => Some("R"),
+            PieceKind::Pawn => Some(""),
         }
     }
 

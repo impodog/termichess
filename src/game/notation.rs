@@ -150,7 +150,7 @@ impl Board {
                 let mut cur = 0;
 
                 if chars
-                    .get(0)
+                    .first()
                     .ok_or(err!("Piece code required"))?
                     .is_uppercase()
                 {
