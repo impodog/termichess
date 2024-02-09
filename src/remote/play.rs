@@ -1,9 +1,18 @@
 use super::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum ConnectionStatus {
+    Uninitialized,
+    Open,
+    Closed,
+}
+
+#[derive(Debug)]
 struct Connection {
     address: String,
     room: server::RoomCode,
     player: bool,
+    pub status: Cell<ConnectionStatus>,
 }
 
 impl Connection {
@@ -47,7 +56,7 @@ impl Connection {
         }
     }
 
-    async fn play(&self, cmd: String) -> Result<(), String> {
+    async fn play(&self, cmd: String, board: &game::Board) -> Result<(), String> {
         let client = reqwest::Client::new();
         let res = client
             .post(format!("{}/chess/play", self.address))
@@ -55,7 +64,8 @@ impl Connection {
                 json!(server::CommandRequest {
                     room: self.room,
                     player: self.player,
-                    cmd
+                    cmd,
+                    board: board.serialize()
                 })
                 .to_string(),
             )
@@ -102,6 +112,7 @@ impl Connection {
             .send()
             .await
             .map_err(|e| e.to_string())?;
+        self.status.set(ConnectionStatus::Closed);
         match res.status() {
             StatusCode::OK => Ok(()),
             _ => Err(res.text().await.map_err(|e| e.to_string())?),
@@ -129,6 +140,33 @@ impl Connection {
         }
     }
 
+    async fn log_back(&self) -> Result<String, ()> {
+        let client = reqwest::Client::new();
+        let res = client
+            .post(format!("{}/chess/log_back", self.address))
+            .body(
+                json!(server::LogBackRequest {
+                    room: self.room,
+                    player: self.player
+                })
+                .to_string(),
+            )
+            .send()
+            .await
+            .map_err(|_e| ())?;
+        match res.status() {
+            StatusCode::OK => {
+                let response: server::LogBackResponse =
+                    match serde_json::from_str(&res.text().await.map_err(|_e| ())?) {
+                        Ok(res) => res,
+                        Err(_e) => return Err(()),
+                    };
+                Ok(response.board)
+            }
+            _ => Err(()),
+        }
+    }
+
     fn build() -> Self {
         let address = dialoguer::Input::new()
             .with_prompt("Enter the server address")
@@ -147,23 +185,16 @@ impl Connection {
             address,
             room,
             player: false,
+            status: Cell::new(ConnectionStatus::Uninitialized),
         }
     }
 }
 
-pub async fn play_remotely() {
+async fn play_remotely_with(connection: Connection, mut board: game::Board) -> Connection {
     let error = style("Error").red().bold();
-    let terminate = style("Terminating due to Error").red().bold();
-    let connection = {
-        let result = Connection::build().login().await;
-        if let Err(err) = result {
-            println!("{}: {}", error, err);
-            return;
-        }
-        result.unwrap()
-    };
+    let terminate = style("Terminating due to error").red().bold();
 
-    {
+    if connection.status.get() == ConnectionStatus::Uninitialized {
         let bar =
             indicatif::ProgressBar::new_spinner().with_message("Waiting for opponent to join...");
         bar.enable_steady_tick(Duration::from_millis(300));
@@ -174,7 +205,7 @@ pub async fn play_remotely() {
             let q = connection.is_ok().await;
             if let Err(err) = q {
                 println!("{} {}", terminate, err);
-                return;
+                return connection;
             }
 
             if q.unwrap() {
@@ -185,9 +216,10 @@ pub async fn play_remotely() {
         }
 
         bar.finish_with_message("Opponent joined!".to_string());
+
+        connection.status.set(ConnectionStatus::Open);
     }
 
-    let mut board = game::Board::new();
     let mut is_turn = connection.player;
     let mut err: Option<String> = None;
 
@@ -248,7 +280,7 @@ pub async fn play_remotely() {
             println!("Draw offer has been declined!");
 
             if let Some(str) = player_str {
-                let play = connection.play(str).await;
+                let play = connection.play(str, &board).await;
                 if let Err(err) = play {
                     println!("{} {}", terminate, err);
                     break 'game_loop;
@@ -268,7 +300,7 @@ pub async fn play_remotely() {
                             err = Some("Invalid move! This leads to a check!".to_string());
                         } else {
                             if let Some(str) = player_str {
-                                let play = connection.play(str).await;
+                                let play = connection.play(str, &board).await;
                                 if let Err(err) = play {
                                     println!("{} {}", terminate, err);
                                     break 'game_loop;
@@ -287,7 +319,7 @@ pub async fn play_remotely() {
                     println!("{} resigned!", pronoun);
 
                     if let Some(str) = player_str {
-                        let play = connection.play(str).await;
+                        let play = connection.play(str, &board).await;
                         if let Err(err) = play {
                             println!("{} {}", terminate, err);
                             break 'game_loop;
@@ -301,7 +333,7 @@ pub async fn play_remotely() {
                 }
                 util::Command::Draw => {
                     if let Some(str) = player_str {
-                        let play = connection.play(str).await;
+                        let play = connection.play(str, &board).await;
                         if let Err(err) = play {
                             println!("{} {}", terminate, err);
                             break 'game_loop;
@@ -314,7 +346,7 @@ pub async fn play_remotely() {
                 }
                 util::Command::Chat(str) => {
                     if let Some(str) = player_str {
-                        let play = connection.play(str).await;
+                        let play = connection.play(str, &board).await;
                         if let Err(err) = play {
                             println!("{} {}", terminate, err);
                             break 'game_loop;
@@ -333,17 +365,73 @@ pub async fn play_remotely() {
 
     if board.status != game::Status::Playing {
         println!("{}", board);
+
+        {
+            let bar =
+                indicatif::ProgressBar::new_spinner().with_message("Waiting for game to finish...");
+            bar.enable_steady_tick(Duration::from_millis(300));
+
+            let number: u64 = rand::random();
+            tokio::time::sleep(Duration::from_millis(3000 + number % 2000)).await;
+
+            bar.finish_and_clear();
+        }
+
+        let _ = connection.logout().await;
     }
 
-    {
-        let bar =
-            indicatif::ProgressBar::new_spinner().with_message("Waiting for game to finish...");
-        bar.enable_steady_tick(Duration::from_millis(300));
+    connection
+}
 
-        let number: u64 = rand::random();
-        tokio::time::sleep(Duration::from_millis(3000 + number % 2000)).await;
+async fn play_remotely_with_any(connection: Option<Connection>) -> Option<Connection> {
+    let (connection, board) = match connection {
+        None => (
+            {
+                let connection = Connection::build().login().await;
+                if let Err(err) = connection {
+                    println!("{} {}", style("Error").red().bold(), err);
+                    return None;
+                }
+                connection.unwrap()
+            },
+            game::Board::new(),
+        ),
+        Some(connection) => {
+            let bar = indicatif::ProgressBar::new_spinner()
+                .with_message("Attempting to reconnect to the server...");
+            bar.enable_steady_tick(Duration::from_millis(300));
+            let start_time = std::time::Instant::now();
+            let board = loop {
+                match connection.log_back().await {
+                    Ok(board) => {
+                        bar.finish_with_message("Reconnected to the server!".to_string());
+                        break board;
+                    }
+                    Err(_) => {
+                        tokio::time::sleep(Duration::from_millis(300)).await;
+                    }
+                }
+                if start_time.elapsed() > Duration::from_secs(15) {
+                    println!("{}: Reconnection timed out.", style("Error").red().bold());
+                    let _ = connection.logout().await;
+                    return Some(connection);
+                }
+            };
+            (connection, game::Board::deserialize(board).unwrap())
+        }
+    };
+    Some(play_remotely_with(connection, board).await)
+}
 
-        bar.finish_and_clear();
+pub async fn play_remotely() {
+    let mut connection = None;
+    loop {
+        let connection_f = play_remotely_with_any(connection);
+        connection = connection_f.await;
+        if connection.is_none()
+            || connection.as_ref().unwrap().status.get() != ConnectionStatus::Open
+        {
+            break;
+        }
     }
-    let _ = connection.logout().await;
 }

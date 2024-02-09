@@ -20,6 +20,7 @@ pub struct CommandRequest {
     // The player of chess, white(true) or black(false)
     pub player: bool,
     pub cmd: String,
+    pub board: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,6 +48,17 @@ pub struct IsOkResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LogoutRequest {
     pub room: RoomCode,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LogBackRequest {
+    pub room: RoomCode,
+    pub player: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LogBackResponse {
+    pub board: String,
 }
 
 #[derive(Debug, Deserialize)]

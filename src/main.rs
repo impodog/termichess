@@ -7,7 +7,7 @@ async fn main() {
     loop {
         let mode = dialoguer::Select::new()
             .with_prompt("Main Menu")
-            .items(&["Play", "Play Online", "Information", "Quit"])
+            .items(&["Play Local", "Play Online", "Information", "Quit"])
             .default(0)
             .interact()
             .unwrap();

@@ -138,12 +138,7 @@ impl Board {
         }
         let squares = iter.next().unwrap();
         let moves = iter.next().unwrap();
-        board.turn = iter
-            .next()
-            .unwrap()
-            .parse()
-            .map(|v| Some(v))
-            .unwrap_or(None)?;
+        board.turn = iter.next().unwrap().parse().map(Some).unwrap_or(None)?;
         let status = iter.next().unwrap();
         board.draw_offer = iter.next().unwrap().chars().next()? == 't';
 
@@ -156,15 +151,11 @@ impl Board {
                 '-' => str.push('-'),
                 c => {
                     str.push(c);
-                    loop {
-                        if let Some(c) = iter.peek() {
-                            if c.is_uppercase() || *c == '-' {
-                                break;
-                            }
-                            str.push(*c);
-                        } else {
+                    while let Some(c) = iter.peek() {
+                        if c.is_uppercase() || *c == '-' {
                             break;
                         }
+                        str.push(*c);
                         iter.next()?;
                     }
                 }
@@ -191,6 +182,9 @@ impl Board {
         }
 
         board.status = Status::deserialize(status.clone())?;
+
+        board.update();
+        board.update_mate();
 
         Some(board)
     }
