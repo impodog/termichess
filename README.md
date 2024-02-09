@@ -62,7 +62,8 @@ You can talk to your opponent when it's your turn. Simply type `chat [your messa
 You can enhance your game experience by modifying the `termichess.toml` file, under where you start the executable.
 
 Possible configurations are:
-| Key       | Description                                                                         | Default                 |
-| ---       | ---                                                                                 | ---                     |
-| `unicode` | Whether to use unicode symbols for chess pieces. If not, ascii characters are used. | `false`                 |
-| `address` | The default address of the remote server to use.                                    | `http://127.0.0.1:8080` |
+| Key | Description | Default |
+| --- | --- | --- |
+| `unicode` | Whether to use unicode symbols for chess pieces. If not, ascii characters are used. | `false` |
+| `address` | The default address of the remote server to use. | `http://127.0.0.1:8080` |
+| `spacing` | (Only when `unicode=true`)The displayed length in chars of each piece. | `3` |

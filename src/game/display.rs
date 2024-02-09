@@ -29,13 +29,18 @@ impl Display for Piece {
         let is_dark_tile = f.alternate();
 
         let str = if CONFIG.unicode {
-            let mut str = String::from(' ');
+            let mut str = String::new();
+            for _ in 0..CONFIG.spacing.div_ceil(2) - 1 {
+                str.push(' ');
+            }
             str.push_str(unicode);
-            str.push(' ');
+            for _ in 0..CONFIG.spacing.div_euclid(2) {
+                str.push(' ');
+            }
             str
         } else {
             let c = if self.is_empty() {
-                '-'
+                ' '
             } else {
                 match self.color {
                     PieceColor::White => ':',
@@ -108,7 +113,12 @@ impl Board {
                 self.show_rank_flip(f, rank, flip)?;
                 writeln!(f)?;
             }
-            writeln!(f, "   a  b  c  d  e  f  g  h")?;
+            let spacing = CONFIG.get_spaces();
+            write!(f, " ")?;
+            for i in 0..8 {
+                write!(f, "{}{}", spacing, (b'a' + i) as char)?;
+            }
+            writeln!(f)?;
         } else {
             for rank in 0..8 {
                 write!(f, "{} ", rank + 1)?;
@@ -126,7 +136,12 @@ impl Board {
                 self.show_rank_flip(f, rank, !flip)?;
                 writeln!(f)?;
             }
-            writeln!(f, "   h  g  f  e  d  c  b  a")?;
+            let spacing = CONFIG.get_spaces();
+            write!(f, " ")?;
+            for i in 0..8 {
+                write!(f, "{}{}", spacing, (b'h' - i) as char)?;
+            }
+            writeln!(f)?;
         }
         Ok(())
     }

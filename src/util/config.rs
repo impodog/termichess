@@ -4,6 +4,7 @@ use super::*;
 pub struct Config {
     pub unicode: bool,
     pub address: String,
+    pub spacing: usize,
 }
 
 impl Default for Config {
@@ -11,7 +12,25 @@ impl Default for Config {
         Self {
             unicode: false,
             address: "http://127.0.0.1:8080".to_string(),
+            spacing: 3,
         }
+    }
+}
+
+impl Config {
+    pub fn get_spaces(&self) -> String {
+        let mut s = String::new();
+        for _ in 0..self.spacing - 1 {
+            s.push(' ');
+        }
+        s
+    }
+
+    pub fn modify(mut self) -> Self {
+        if !self.unicode {
+            self.spacing = 3;
+        }
+        self
     }
 }
 
