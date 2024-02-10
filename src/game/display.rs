@@ -34,8 +34,12 @@ impl Display for Piece {
                 str.push(' ');
             }
             str.push_str(unicode);
-            for _ in 0..CONFIG.spacing.div_euclid(2) {
-                str.push(' ');
+            for i in 0..CONFIG.spacing.div_euclid(2) {
+                if i == 0 && CONFIG.spacing % 2 == 0 && self.is_empty() {
+                    str.push_str(unicode);
+                } else {
+                    str.push(' ');
+                }
             }
             str
         } else {
@@ -113,10 +117,18 @@ impl Board {
                 self.show_rank_flip(f, rank, flip)?;
                 writeln!(f)?;
             }
-            let spacing = CONFIG.get_spaces();
             write!(f, " ")?;
+
+            let spacing = CONFIG.get_spaces();
             for i in 0..8 {
-                write!(f, "{}{}", spacing, (b'a' + i) as char)?;
+                let c = (b'a' + i) as char;
+                write!(
+                    f,
+                    "{}{}{}",
+                    spacing,
+                    if CONFIG.spacing % 2 == 0 { c } else { ' ' },
+                    c
+                )?;
             }
             writeln!(f)?;
         } else {
@@ -136,10 +148,18 @@ impl Board {
                 self.show_rank_flip(f, rank, !flip)?;
                 writeln!(f)?;
             }
-            let spacing = CONFIG.get_spaces();
             write!(f, " ")?;
+
+            let spacing = CONFIG.get_spaces();
             for i in 0..8 {
-                write!(f, "{}{}", spacing, (b'h' - i) as char)?;
+                let c = (b'h' - i) as char;
+                write!(
+                    f,
+                    "{}{}{}",
+                    spacing,
+                    if CONFIG.spacing % 2 == 0 { c } else { ' ' },
+                    c
+                )?;
             }
             writeln!(f)?;
         }

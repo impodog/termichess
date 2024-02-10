@@ -20,13 +20,14 @@ impl Default for Config {
 impl Config {
     pub fn get_spaces(&self) -> String {
         let mut s = String::new();
-        for _ in 0..self.spacing - 1 {
+        for _ in 0..self.spacing - 2 {
             s.push(' ');
         }
         s
     }
 
     pub fn modify(mut self) -> Self {
+        self.spacing = self.spacing.max(3);
         if !self.unicode {
             self.spacing = 3;
         }
