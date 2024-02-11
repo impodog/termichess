@@ -7,10 +7,47 @@ use tide::{prelude::*, Error};
 use tide::{Request, StatusCode};
 
 #[derive(Debug, Clone)]
+struct RoomJoined {
+    num: usize,
+    assigned: bool,
+}
+
+impl Default for RoomJoined {
+    fn default() -> Self {
+        Self {
+            num: 0,
+            assigned: false,
+        }
+    }
+}
+
+impl RoomJoined {
+    fn next(&mut self) -> Option<bool> {
+        match self.num {
+            0 => {
+                self.num = 1;
+                let player = rand::random::<bool>();
+                self.assigned = player;
+                Some(player)
+            }
+            1 => {
+                self.num = 2;
+                Some(!self.assigned)
+            }
+            _ => None,
+        }
+    }
+
+    fn ok(&self) -> bool {
+        self.num == 2
+    }
+}
+
+#[derive(Debug, Clone)]
 struct RoomInfo {
     turn: bool,
     is_chat: bool,
-    joined: usize,
+    joined: RoomJoined,
     queue: Option<String>,
     board: String,
     last_used: std::time::Instant,
@@ -75,30 +112,26 @@ async fn chess_login(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
         let mut map = map.write().await;
 
         if let std::collections::hash_map::Entry::Vacant(e) = map.entry(login.room) {
+            let mut joined = RoomJoined::default();
+            let player = joined.next().unwrap();
             e.insert(RoomInfo {
                 turn: true,
                 is_chat: false,
-                joined: 1,
+                joined,
                 queue: None,
                 board: BOARD_DEFAULT.to_string(),
                 last_used: std::time::Instant::now(),
             });
             info!("New room created: {:?}", login.room);
-            Ok(json!(LoginResponse { player: true }).into())
+            Ok(json!(LoginResponse { player }).into())
         } else {
             let info = map.get_mut(&login.room).unwrap();
-            match info.joined {
-                0 => {
-                    info.joined += 1;
+            match info.joined.next() {
+                Some(player) => {
                     info!("Player joined the room: {:?}", login.room);
-                    Ok(json!(LoginResponse { player: true }).into())
+                    Ok(json!(LoginResponse { player }).into())
                 }
-                1 => {
-                    info.joined += 1;
-                    info!("Player joined the room: {:?}", login.room);
-                    Ok(json!(LoginResponse { player: false }).into())
-                }
-                _ => {
+                None => {
                     warn!("Room is full: {:?}", login.room);
                     Err(Error::new(StatusCode::Conflict, ServerError))
                 }
@@ -114,7 +147,7 @@ async fn chess_play(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::Re
 
         if map.contains_key(&command.room) {
             let info = map.get_mut(&command.room).unwrap();
-            if info.joined == 2 {
+            if info.joined.ok() {
                 info.last_used = std::time::Instant::now();
 
                 if info.turn == command.player && info.queue.is_none() {
@@ -153,7 +186,7 @@ async fn chess_query(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
 
         if map.contains_key(&query.room) {
             let info = map.get_mut(&query.room).unwrap();
-            if info.joined == 2 {
+            if info.joined.ok() {
                 info.last_used = std::time::Instant::now();
 
                 if info.turn == query.player {
@@ -178,7 +211,7 @@ async fn chess_query(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
                 Err(Error::new(StatusCode::NotAcceptable, ServerError))
             }
         } else {
-            println!("Room not found: {:?}", query.room);
+            warn!("Room not found: {:?}", query.room);
             Err(Error::new(StatusCode::NotFound, ServerError))
         }
     }
@@ -209,7 +242,7 @@ async fn chess_is_ok(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide::R
             let info = map.get_mut(&is_ok.room).unwrap();
             info.last_used = std::time::Instant::now();
             Ok(json!(IsOkResponse {
-                ok: info.joined == 2
+                ok: info.joined.ok()
             })
             .into())
         } else {
@@ -226,7 +259,7 @@ async fn chess_log_back(mut req: Request<()>, map: Arc<RwLock<RoomMap>>) -> tide
 
         if let std::collections::hash_map::Entry::Occupied(e) = map.entry(log_back.room) {
             let info = e.get();
-            if e.get().joined == 2 {
+            if e.get().joined.ok() {
                 info!("Player logged back into room: {:?}", log_back.room);
                 Ok(json!(LogBackResponse {
                     board: info.board.clone()

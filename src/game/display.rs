@@ -27,6 +27,7 @@ impl Display for Piece {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let unicode = self.unicode();
         let is_dark_tile = f.alternate();
+        let is_used_tile = f.sign_plus();
 
         let str = if CONFIG.unicode {
             let mut str = String::new();
@@ -57,11 +58,15 @@ impl Display for Piece {
             str
         };
 
-        let style = style(str).bold();
-        let style = if is_dark_tile {
-            style.bg(console::Color::White).fg(console::Color::Black)
+        let style = style(str).bold().fg(console::Color::Black);
+        let style = if is_used_tile {
+            style.bg(console::Color::Red)
         } else {
-            style.bg(console::Color::Cyan).fg(console::Color::Black)
+            if is_dark_tile {
+                style.bg(console::Color::White)
+            } else {
+                style.bg(console::Color::Magenta)
+            }
         };
 
         write!(f, "{}", style)?;
@@ -107,11 +112,19 @@ impl Board {
                     let square = Square::new(file, rank).unwrap();
                     let piece = self.get(square);
 
+                    let is_used_tile = self
+                        .moves
+                        .last()
+                        .map_or(false, |m| m.from == square || m.to == square);
                     let is_dark_tile = (file + rank) % 2 == 1;
-                    if is_dark_tile {
-                        write!(f, "{:#}", piece)?;
+                    if is_used_tile {
+                        write!(f, "{:+}", piece)?;
                     } else {
-                        write!(f, "{}", piece)?;
+                        if is_dark_tile {
+                            write!(f, "{:#}", piece)?;
+                        } else {
+                            write!(f, "{}", piece)?;
+                        }
                     }
                 }
                 self.show_rank_flip(f, rank, flip)?;
@@ -138,11 +151,19 @@ impl Board {
                     let square = Square::new(file, rank).unwrap();
                     let piece = self.get(square);
 
+                    let is_used_tile = self
+                        .moves
+                        .last()
+                        .map_or(false, |m| m.from == square || m.to == square);
                     let is_dark_tile = (file + rank) % 2 == 1;
-                    if is_dark_tile {
-                        write!(f, "{:#}", piece)?;
+                    if is_used_tile {
+                        write!(f, "{:+}", piece)?;
                     } else {
-                        write!(f, "{}", piece)?;
+                        if is_dark_tile {
+                            write!(f, "{:#}", piece)?;
+                        } else {
+                            write!(f, "{}", piece)?;
+                        }
                     }
                 }
                 self.show_rank_flip(f, rank, !flip)?;

@@ -396,29 +396,39 @@ async fn play_remotely_with_any(connection: Option<Connection>) -> Option<Connec
             },
             game::Board::new(),
         ),
-        Some(connection) => {
-            let bar = indicatif::ProgressBar::new_spinner()
-                .with_message("Attempting to reconnect to the server...");
-            bar.enable_steady_tick(Duration::from_millis(300));
-            let start_time = std::time::Instant::now();
-            let board = loop {
-                match connection.log_back().await {
-                    Ok(board) => {
-                        bar.finish_with_message("Reconnected to the server!".to_string());
-                        break board;
-                    }
-                    Err(_) => {
-                        tokio::time::sleep(Duration::from_millis(300)).await;
-                    }
+        Some(connection) => match connection.status.get() {
+            ConnectionStatus::Uninitialized => {
+                let connection = connection.login().await;
+                if let Err(err) = connection {
+                    println!("{} {}", style("Error").red().bold(), err);
+                    return None;
                 }
-                if start_time.elapsed() > Duration::from_secs(15) {
-                    println!("{}: Reconnection timed out.", style("Error").red().bold());
-                    let _ = connection.logout().await;
-                    return Some(connection);
-                }
-            };
-            (connection, game::Board::deserialize(board).unwrap())
-        }
+                (connection.unwrap(), game::Board::new())
+            }
+            _ => {
+                let bar = indicatif::ProgressBar::new_spinner()
+                    .with_message("Attempting to reconnect to the server...");
+                bar.enable_steady_tick(Duration::from_millis(300));
+                let start_time = std::time::Instant::now();
+                let board = loop {
+                    match connection.log_back().await {
+                        Ok(board) => {
+                            bar.finish_with_message("Reconnected to the server!".to_string());
+                            break board;
+                        }
+                        Err(_) => {
+                            tokio::time::sleep(Duration::from_millis(300)).await;
+                        }
+                    }
+                    if start_time.elapsed() > Duration::from_secs(15) {
+                        println!("{}: Reconnection timed out.", style("Error").red().bold());
+                        let _ = connection.logout().await;
+                        return Some(connection);
+                    }
+                };
+                (connection, game::Board::deserialize(board).unwrap())
+            }
+        },
     };
     Some(play_remotely_with(connection, board).await)
 }
@@ -426,11 +436,26 @@ async fn play_remotely_with_any(connection: Option<Connection>) -> Option<Connec
 pub async fn play_remotely() {
     let mut connection = None;
     loop {
-        let connection_f = play_remotely_with_any(connection);
-        connection = connection_f.await;
-        if connection.is_none()
-            || connection.as_ref().unwrap().status.get() != ConnectionStatus::Open
-        {
+        loop {
+            let connection_f = play_remotely_with_any(connection);
+            connection = connection_f.await;
+            if connection.is_none()
+                || connection.as_ref().unwrap().status.get() != ConnectionStatus::Open
+            {
+                break;
+            }
+        }
+        if let Some(connection) = connection.as_ref() {
+            let play_again = dialoguer::Confirm::new()
+                .with_prompt("Do you want to play again?")
+                .interact()
+                .unwrap();
+            if !play_again {
+                break;
+            }
+
+            connection.status.set(ConnectionStatus::Uninitialized);
+        } else {
             break;
         }
     }
