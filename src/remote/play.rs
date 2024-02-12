@@ -299,6 +299,10 @@ async fn play_remotely_with(connection: Connection, mut board: game::Board) -> C
                         if next.is_none() {
                             err = Some("Invalid move! This leads to a check!".to_string());
                         } else {
+                            is_turn = !is_turn;
+
+                            board = next.unwrap();
+
                             if let Some(str) = player_str {
                                 let play = connection.play(str, &board).await;
                                 if let Err(err) = play {
@@ -306,10 +310,6 @@ async fn play_remotely_with(connection: Connection, mut board: game::Board) -> C
                                     break 'game_loop;
                                 }
                             }
-
-                            is_turn = !is_turn;
-
-                            board = next.unwrap();
                         }
                     } else {
                         err = Some(format!("{}", notation.unwrap_err()));
@@ -318,20 +318,11 @@ async fn play_remotely_with(connection: Connection, mut board: game::Board) -> C
                 util::Command::Resign => {
                     println!("{} resigned!", pronoun);
 
-                    if let Some(str) = player_str {
-                        let play = connection.play(str, &board).await;
-                        if let Err(err) = play {
-                            println!("{} {}", terminate, err);
-                            break 'game_loop;
-                        }
-                    }
-
                     // This is technically not necessary because the game is ending soon, but it's a good practice to keep the game state consistent
                     is_turn = !is_turn;
 
                     board.resign();
-                }
-                util::Command::Draw => {
+
                     if let Some(str) = player_str {
                         let play = connection.play(str, &board).await;
                         if let Err(err) = play {
@@ -339,10 +330,19 @@ async fn play_remotely_with(connection: Connection, mut board: game::Board) -> C
                             break 'game_loop;
                         }
                     }
-
+                }
+                util::Command::Draw => {
                     is_turn = !is_turn;
 
                     board.draw();
+
+                    if let Some(str) = player_str {
+                        let play = connection.play(str, &board).await;
+                        if let Err(err) = play {
+                            println!("{} {}", terminate, err);
+                            break 'game_loop;
+                        }
+                    }
                 }
                 util::Command::Chat(str) => {
                     if let Some(str) = player_str {

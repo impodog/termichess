@@ -95,7 +95,7 @@ async fn main() -> tide::Result<()> {
             loop {
                 clear_unused_rooms(rooms.clone()).await;
                 let number: u64 = rand::random();
-                async_std::task::sleep(std::time::Duration::from_secs(20 + number % 20)).await;
+                async_std::task::sleep(std::time::Duration::from_secs(15 + number % 20)).await;
             }
         });
     });
@@ -283,7 +283,7 @@ async fn clear_unused_rooms(map: Arc<RwLock<RoomMap>>) {
     let mut map = map.write().await;
     let now = std::time::Instant::now();
     map.retain(|_, info| {
-        if now.duration_since(info.last_used) < std::time::Duration::from_secs(120) {
+        if now.duration_since(info.last_used) < std::time::Duration::from_secs(20) {
             true
         } else {
             info!("Room expired: {:?}", info);
